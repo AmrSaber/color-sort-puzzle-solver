@@ -73,6 +73,10 @@ impl Container {
             other.content.push(color);
         }
     }
+
+    pub fn to_string(&self) -> String {
+        self.content.join("|")
+    }
 }
 
 impl std::fmt::Display for Container {

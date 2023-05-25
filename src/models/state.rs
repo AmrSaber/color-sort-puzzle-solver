@@ -167,6 +167,15 @@ impl Ord for State {
 
 impl Hash for State {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.containers.iter().for_each(|c| c.hash(state));
+        let sorted_containers = {
+            let mut containers: Vec<String> =
+                self.containers.iter().map(|c| c.to_string()).collect();
+            containers.sort_unstable();
+            containers
+        };
+
+        for container in sorted_containers {
+            container.hash(state);
+        }
     }
 }
