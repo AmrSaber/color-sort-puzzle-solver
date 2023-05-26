@@ -47,11 +47,11 @@ impl State {
             .count() as i32
     }
 
-    // The more the better
+    // The higher the better
     fn get_score(&self) -> (i32, i32, i32) {
         return (
-            self.sorted_count(),
             -(self.transitions.len() as i32),
+            self.sorted_count(),
             self.stars_count(),
         );
     }
@@ -117,7 +117,9 @@ impl State {
         let mut queue = BinaryHeap::new();
         let mut visited = HashSet::new();
 
-        queue.push(Rc::new(self.clone()));
+        let current = Rc::new(self.clone());
+        queue.push(Rc::clone(&current));
+        visited.insert(Rc::clone(&current));
 
         while !queue.is_empty() {
             let top = queue.pop().unwrap();
@@ -126,13 +128,12 @@ impl State {
                 return Some(top);
             }
 
-            visited.insert(Rc::clone(&top));
-
             let possible_states = top.get_possible_states();
             possible_states.into_iter().for_each(|state| {
                 let state = Rc::from(state);
                 if !visited.contains(&state) {
                     queue.push(Rc::clone(&state));
+                    visited.insert(Rc::clone(&state));
                 }
             });
         }
