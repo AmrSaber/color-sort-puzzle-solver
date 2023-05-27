@@ -10,36 +10,12 @@ pub struct State {
 }
 
 impl State {
-    /// Creates a new state (game) with the given content and capacity.
-    /// Any value that is not +ve or one of the defined container IDs is ignored.
-    /// Each of the inner vectors of the content MUST contain the exact same count of +ve numbers as the capacity.
-    pub fn new(content: Vec<Vec<isize>>, capacity: usize) -> Result<Self, String> {
-        let mut containers: Vec<Container> = Vec::new();
-
-        for line in content {
-            let container = match Container::new(line, capacity) {
-                Ok(container) => container,
-                Err(err) => return Err(err),
-            };
-
-            containers.push(container);
-        }
-
-        // Add 2 empty containers
-        containers.push(Container::new(Vec::new(), capacity).unwrap());
-        containers.push(Container::new(Vec::new(), capacity).unwrap());
-
-        let dash_count = containers.iter().filter(|c| c.has_dash()).count();
-        if dash_count > 2 {
-            return Err(String::from(
-                "cannot mark more than 2 containers to be empty!",
-            ));
-        }
-
-        return Ok(Self {
+    /// Creates a new state (game) with the given containers. Empty containers must be provided as well.
+    pub fn new(containers: Vec<Container>) -> Self {
+        return Self {
             containers,
             transitions: Vec::new(),
-        });
+        };
     }
 
     /// Get transitions that lead to this state from the original state.
@@ -55,17 +31,17 @@ impl State {
         self.containers.iter().filter(|c| c.is_empty()).count() as i32
     }
 
-    fn stars_count(&self) -> i32 {
+    fn must_fill_count(&self) -> i32 {
         self.containers
             .iter()
-            .filter(|c| c.has_star() && c.is_sorted())
+            .filter(|c| c.must_fill() && c.is_sorted())
             .count() as i32
     }
 
-    fn dashes_count(&self) -> i32 {
+    fn must_empty_count(&self) -> i32 {
         self.containers
             .iter()
-            .filter(|c| c.has_dash() && c.is_empty())
+            .filter(|c| c.must_empty() && c.is_empty())
             .count() as i32
     }
 
@@ -74,26 +50,26 @@ impl State {
         return (
             -(self.transitions.len() as i32),
             self.sorted_count(),
-            self.stars_count(),
-            self.dashes_count(),
+            self.must_fill_count(),
+            self.must_empty_count(),
         );
     }
 
     /// Check if the state is solved or not
     pub fn is_solved(&self) -> bool {
-        let got_stars = self
+        let got_fills = self
             .containers
             .iter()
-            .all(|c| !(c.has_star() && c.is_empty()));
+            .all(|c| !(c.must_fill() && c.is_empty()));
 
-        let got_dashes = self
+        let got_empties = self
             .containers
             .iter()
-            .all(|c: &Container| !(c.has_dash() && !c.is_empty()));
+            .all(|c: &Container| !(c.must_empty() && !c.is_empty()));
 
         let all_sorted = self.empty_count() + self.sorted_count() == self.containers.len() as i32;
 
-        return all_sorted && got_stars && got_dashes;
+        return all_sorted && got_fills && got_empties;
     }
 
     fn get_possible_transitions(&self) -> Vec<Transition> {

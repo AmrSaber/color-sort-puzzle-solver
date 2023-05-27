@@ -3,11 +3,11 @@ use std::{
     process,
 };
 
-use color_sort_solver::{State, CONTAINER_DASH_ID, CONTAINER_STAR_ID};
+use color_sort_solver::{Container, ContainerConstraint, State};
 
 fn main() {
     let state = {
-        let (lines, capacity) = match read_input() {
+        let containers = match read_input() {
             Ok(input) => input,
             Err(errors) => {
                 println!("Found following errors in input:");
@@ -16,13 +16,7 @@ fn main() {
             }
         };
 
-        match State::new(lines, capacity) {
-            Ok(state) => state,
-            Err(err) => {
-                println!("error: {err}");
-                process::exit(1);
-            }
-        }
+        State::new(containers)
     };
 
     if state.is_solved() {
@@ -43,48 +37,40 @@ fn main() {
     }
 }
 
-fn read_input() -> Result<(Vec<Vec<isize>>, usize), Vec<String>> {
-    let mut lines = Vec::new();
+/// conditions for input:
+/// - All containers are same capacity
+/// - Each color must be present number of times == container capacity
+/// - # of colors <= # of containers
+fn read_input() -> Result<Vec<Container>, Vec<String>> {
+    let lines = {
+        let mut vec = Vec::new();
 
-    for line in std::io::stdin().lines() {
-        match line {
-            Ok(mut content) => {
-                content = content
-                    .trim()
-                    .to_owned()
-                    .split(' ')
-                    .rev()
-                    .collect::<Vec<&str>>()
-                    .join(" ")
-                    .to_uppercase();
+        for line in std::io::stdin().lines() {
+            match line {
+                Ok(mut content) => {
+                    content = content
+                        .trim()
+                        .to_owned()
+                        .split(' ')
+                        .filter(|s| *s != "") // Remove any additional spaces within line
+                        .rev()
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                        .to_uppercase();
 
-                if content != "" {
-                    lines.push(content);
+                    if content != "" {
+                        vec.push(content);
+                    }
                 }
+
+                Err(err) => panic!("could not read stdin: {}", err),
             }
-
-            Err(err) => panic!("could not read stdin: {}", err),
-        }
-    }
-
-    // Figure out the capacity based on max line size of input
-    let capacity = {
-        let mut cap = 0;
-
-        for line in &lines {
-            let length = line
-                .replace("*", "")
-                .replace("-", "")
-                .trim()
-                .split(" ")
-                .filter(|s| *s != "")
-                .count();
-
-            cap = usize::max(cap, length);
         }
 
-        cap
+        vec
     };
+
+    let capacity: usize;
 
     // Validate the input
     {
@@ -94,36 +80,63 @@ fn read_input() -> Result<(Vec<Vec<isize>>, usize), Vec<String>> {
             let mut colors = Vec::new();
 
             for line in lines.iter() {
-                colors.extend(line.split(' ').map(|s| s.to_owned()));
+                colors.extend(
+                    line.split(' ')
+                        .filter(|s| *s != "*" && *s != "-" && *s != "+")
+                        .map(|s| s.to_owned()),
+                );
             }
 
             colors
-                .into_iter()
-                .filter(|s| s != "*" && s != "-")
-                .collect()
         };
 
-        // Check that colors count == containers count
+        // Validate that all containers have same capacity
+        {
+            let lines_with_content = lines
+                .iter()
+                .filter(|s| *s != "*")
+                .map(|s| s.to_owned())
+                .collect::<Vec<String>>();
+
+            if lines_with_content.is_empty() {
+                return Ok(Vec::new());
+            }
+
+            let capacities: Vec<usize> = lines_with_content
+                .iter()
+                .map(|s| s.split(' ').filter(|s| *s != "+" && *s != "-").count())
+                .collect();
+
+            let first = capacities.first().unwrap().clone();
+            let all_same = capacities.iter().all(|c| *c == first);
+            if !all_same {
+                errors.push(String::from("All containers must be of same capacity"));
+            }
+
+            capacity = first;
+        }
+
+        // Check that colors count <= containers count
         {
             let colors_set: HashSet<&String> = HashSet::from_iter(all_colors.iter());
-            if colors_set.len() != lines.len() {
+            if colors_set.len() > lines.len() {
                 errors.push(format!(
-                    "colors count ({}) != containers count ({})",
+                    "colors count ({}) > containers count ({})",
                     colors_set.len(),
                     lines.len()
                 ))
             }
         }
 
-        // Check that each color exists MAX_SIZE times
+        // Check that # of each color == capacity of containers
         {
-            let mut colors_map: HashMap<&String, i32> = HashMap::new();
+            let mut color_counts: HashMap<&String, i32> = HashMap::new();
             for color in all_colors.iter() {
-                let entry = colors_map.entry(color).or_default();
-                *entry += 1;
+                let count = color_counts.entry(color).or_default();
+                *count += 1;
             }
 
-            for entry in colors_map {
+            for entry in color_counts {
                 if entry.1 != capacity as i32 {
                     errors.push(format!(
                         "color \"{}\" only exists {} time(s) not {}",
@@ -138,33 +151,39 @@ fn read_input() -> Result<(Vec<Vec<isize>>, usize), Vec<String>> {
         }
     }
 
-    // Transform colors into numbers
-    let input: Vec<Vec<isize>> = {
+    let containers = {
         let mut color_ids = HashMap::new();
-        color_ids.insert("*", CONTAINER_STAR_ID);
-        color_ids.insert("-", CONTAINER_DASH_ID);
+        let mut containers: Vec<Container> = Vec::new();
 
         for line in &lines {
+            let mut content = Vec::new();
+            let mut constraint = ContainerConstraint::None;
+
             for color in line.split(' ') {
-                if color == "" {
+                if color == "+" {
+                    constraint = ContainerConstraint::MustFill;
                     continue;
                 }
 
-                let default_id = color_ids.len() as isize + 1;
-                color_ids.entry(color).or_insert(default_id);
+                if color == "-" {
+                    constraint = ContainerConstraint::MustEmpty;
+                    continue;
+                }
+
+                if color == "*" {
+                    continue;
+                }
+
+                let next_id = color_ids.len() + 1;
+                let color_id = color_ids.entry(color).or_insert(next_id);
+                content.push(color_id.clone());
             }
+
+            containers.push(Container::new(content, constraint, capacity).unwrap());
         }
 
-        lines
-            .iter()
-            .map(|line| {
-                line.split(' ')
-                    .filter(|c| *c != "")
-                    .map(|c| color_ids.get(c).unwrap().clone())
-                    .collect()
-            })
-            .collect()
+        containers
     };
 
-    return Ok((input, capacity));
+    return Ok(containers);
 }

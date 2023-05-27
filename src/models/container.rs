@@ -4,36 +4,25 @@ use std::hash::Hash;
 pub struct Container {
     content: Vec<usize>,
     capacity: usize,
-    has_star: bool,
-    has_dash: bool,
+    constraint: ContainerConstraint,
 }
 
-/// The number to be used in order to indicate that this container has a star
-pub const CONTAINER_STAR_ID: isize = -1;
-
-/// The number to be used in order to indicate that this container has a dash
-pub const CONTAINER_DASH_ID: isize = -2;
+#[derive(Clone, PartialEq, Eq)]
+pub enum ContainerConstraint {
+    MustFill,
+    MustEmpty,
+    None,
+}
 
 impl Container {
-    pub fn new(content: Vec<isize>, capacity: usize) -> Result<Self, String> {
-        let has_dash = content.iter().any(|s| *s == CONTAINER_DASH_ID);
-        let has_star = content.iter().any(|s| *s == CONTAINER_STAR_ID);
-
-        if has_dash && has_star {
-            return Err(String::from(
-                "container cannot have dash and star at the same time!",
-            ));
-        }
-
-        let content: Vec<usize> = content
-            .into_iter()
-            .filter(|s| *s > 0)
-            .map(|e| e as usize)
-            .collect();
-
-        if content.len() > 0 && content.len() != capacity {
+    pub fn new(
+        content: Vec<usize>,
+        constraint: ContainerConstraint,
+        capacity: usize,
+    ) -> Result<Self, String> {
+        if content.len() > 0 && content.len() > capacity {
             return Err(format!(
-                "content size ({}) does not match capacity!",
+                "content size ({}) exceeds capacity!",
                 content.len()
             ));
         }
@@ -41,8 +30,7 @@ impl Container {
         return Ok(Self {
             content,
             capacity,
-            has_star,
-            has_dash,
+            constraint,
         });
     }
 
@@ -58,26 +46,30 @@ impl Container {
         return self.content.len() == self.capacity;
     }
 
-    pub fn is_sorted(&self) -> bool {
-        if self.is_empty() {
-            return false;
-        }
-
+    pub fn is_same_color(&self) -> bool {
         let first = self.content.first().unwrap();
-        return self.content.len() == self.capacity
-            && self.content.iter().all(|color| color == first);
+        return self.content.iter().all(|color| color == first);
     }
 
-    pub fn has_star(&self) -> bool {
-        self.has_star
+    pub fn is_sorted(&self) -> bool {
+        self.content.len() == self.capacity && self.is_same_color()
     }
 
-    pub fn has_dash(&self) -> bool {
-        self.has_dash
+    pub fn must_fill(&self) -> bool {
+        self.constraint == ContainerConstraint::MustFill
+    }
+
+    pub fn must_empty(&self) -> bool {
+        self.constraint == ContainerConstraint::MustEmpty
     }
 
     pub fn can_pour_into(&self, other: &Self) -> bool {
-        if self.is_empty() || self.is_sorted() || other.is_full() {
+        if self.is_empty() || other.is_full() {
+            return false;
+        }
+
+        // This is disallowed because it's a no-op
+        if self.is_same_color() && other.is_empty() {
             return false;
         }
 
