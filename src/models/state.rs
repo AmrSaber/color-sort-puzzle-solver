@@ -29,6 +29,13 @@ impl State {
         containers.push(Container::new(Vec::new(), capacity).unwrap());
         containers.push(Container::new(Vec::new(), capacity).unwrap());
 
+        let dash_count = containers.iter().filter(|c| c.has_dash()).count();
+        if dash_count > 2 {
+            return Err(String::from(
+                "cannot mark more than 2 containers to be empty!",
+            ));
+        }
+
         return Ok(Self {
             containers,
             transitions: Vec::new(),
