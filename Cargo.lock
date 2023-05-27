@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "color-sorter"
+name = "color-sort-solver"
 version = "0.1.0"
