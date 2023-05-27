@@ -2,30 +2,25 @@ use std::hash::Hash;
 
 #[derive(Clone)]
 pub struct Container {
-    content: Vec<String>,
+    content: Vec<isize>,
     has_star: bool,
 }
 
-pub const MAX_CONTAINER_SIZE: usize = 4;
+pub const CONTAINER_CAPACITY: usize = 4;
 
 impl Container {
-    pub fn new(mut content: Vec<String>) -> Self {
-        let has_star = content.iter().any(|s| s == "*");
-        content = content.into_iter().filter(|s| s != "*").collect();
+    pub fn new(mut content: Vec<isize>) -> Self {
+        let has_star = content.iter().any(|s| *s == -1);
+        content = content.into_iter().filter(|s| *s != -1).collect();
 
-        if content.len() > MAX_CONTAINER_SIZE {
+        if content.len() > CONTAINER_CAPACITY {
             panic!("content ({:?}) too large!", content);
         }
 
         return Self { content, has_star };
     }
 
-    pub fn from_string(line: String) -> Self {
-        let content: Vec<String> = line.split(" ").map(|s| s.to_owned()).collect();
-        return Self::new(content);
-    }
-
-    fn peek(&self) -> Option<&String> {
+    fn peek(&self) -> Option<&isize> {
         return self.content.last();
     }
 
@@ -34,7 +29,7 @@ impl Container {
     }
 
     pub fn is_full(&self) -> bool {
-        return self.content.len() == MAX_CONTAINER_SIZE;
+        return self.content.len() == CONTAINER_CAPACITY;
     }
 
     pub fn is_sorted(&self) -> bool {
@@ -43,7 +38,7 @@ impl Container {
         }
 
         let first = self.content.first().unwrap();
-        return self.content.len() == MAX_CONTAINER_SIZE
+        return self.content.len() == CONTAINER_CAPACITY
             && self.content.iter().all(|color| color == first);
     }
 
@@ -75,7 +70,11 @@ impl Container {
     }
 
     pub fn to_string(&self) -> String {
-        self.content.join("|")
+        self.content
+            .iter()
+            .map(|c| c.to_string())
+            .collect::<Vec<String>>()
+            .join("|")
     }
 }
 
@@ -87,6 +86,6 @@ impl std::fmt::Display for Container {
 
 impl Hash for Container {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.content.iter().for_each(|s| s.hash(state));
+        self.content.iter().for_each(|e| e.hash(state));
     }
 }

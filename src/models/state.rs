@@ -15,11 +15,8 @@ impl State {
         };
     }
 
-    pub fn from_strings(lines: Vec<String>) -> Self {
-        let mut containers: Vec<Container> = lines
-            .into_iter()
-            .map(|s| Container::from_string(s))
-            .collect();
+    pub fn from_strings(lines: Vec<Vec<isize>>) -> Self {
+        let mut containers: Vec<Container> = lines.into_iter().map(|v| Container::new(v)).collect();
 
         // Add 2 empty containers
         containers.push(Container::new(Vec::new()));

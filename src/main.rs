@@ -1,7 +1,7 @@
 mod models;
 use std::collections::{HashMap, HashSet};
 
-use models::{State, MAX_CONTAINER_SIZE};
+use models::{State, CONTAINER_CAPACITY};
 
 fn main() {
     let state = {
@@ -30,7 +30,7 @@ fn main() {
     }
 }
 
-fn read_input() -> Vec<String> {
+fn read_input() -> Vec<Vec<isize>> {
     let mut lines = Vec::new();
 
     for line in std::io::stdin().lines() {
@@ -89,10 +89,10 @@ fn read_input() -> Vec<String> {
             }
 
             for entry in colors_map {
-                if entry.1 != MAX_CONTAINER_SIZE as i32 {
+                if entry.1 != CONTAINER_CAPACITY as i32 {
                     errors.push(format!(
                         "color {} only exists {} times not {}",
-                        entry.0, entry.1, MAX_CONTAINER_SIZE
+                        entry.0, entry.1, CONTAINER_CAPACITY
                     ))
                 }
             }
@@ -105,5 +105,32 @@ fn read_input() -> Vec<String> {
         }
     }
 
-    return lines;
+    // Transform colors into numbers
+    let input: Vec<Vec<isize>> = {
+        let mut color_ids = HashMap::new();
+        color_ids.insert("*", -1 as isize);
+
+        for line in &lines {
+            for color in line.split(' ') {
+                if color == "" {
+                    continue;
+                }
+
+                let default_id = color_ids.len() as isize + 1;
+                color_ids.entry(color).or_insert(default_id);
+            }
+        }
+
+        lines
+            .iter()
+            .map(|line| {
+                line.split(' ')
+                    .filter(|c| *c != "")
+                    .map(|c| color_ids.get(c).unwrap().clone())
+                    .collect()
+            })
+            .collect()
+    };
+
+    return input;
 }
