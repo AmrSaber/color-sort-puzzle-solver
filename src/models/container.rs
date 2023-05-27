@@ -3,16 +3,16 @@ use std::hash::Hash;
 #[derive(Clone)]
 pub struct Container {
     content: Vec<isize>,
+    capacity: usize,
     has_star: bool,
     has_dash: bool,
 }
 
-pub const CONTAINER_CAPACITY: usize = 4;
 pub const CONTAINER_STAR_ID: isize = -1;
 pub const CONTAINER_DASH_ID: isize = -2;
 
 impl Container {
-    pub fn new(mut content: Vec<isize>) -> Result<Self, String> {
+    pub fn new(mut content: Vec<isize>, capacity: usize) -> Result<Self, String> {
         let has_dash = content.iter().any(|s| *s == CONTAINER_DASH_ID);
         let has_star = content.iter().any(|s| *s == CONTAINER_STAR_ID);
 
@@ -27,12 +27,13 @@ impl Container {
             .filter(|s| *s != CONTAINER_STAR_ID && *s != CONTAINER_DASH_ID)
             .collect();
 
-        if content.len() > CONTAINER_CAPACITY {
+        if content.len() > capacity {
             return Err(format!("content ({:?}) too large!", content));
         }
 
         return Ok(Self {
             content,
+            capacity,
             has_star,
             has_dash,
         });
@@ -47,7 +48,7 @@ impl Container {
     }
 
     pub fn is_full(&self) -> bool {
-        return self.content.len() == CONTAINER_CAPACITY;
+        return self.content.len() == self.capacity;
     }
 
     pub fn is_sorted(&self) -> bool {
@@ -56,7 +57,7 @@ impl Container {
         }
 
         let first = self.content.first().unwrap();
-        return self.content.len() == CONTAINER_CAPACITY
+        return self.content.len() == self.capacity
             && self.content.iter().all(|color| color == first);
     }
 

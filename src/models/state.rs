@@ -8,18 +8,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(containers: Vec<Container>) -> Self {
-        return Self {
-            containers,
-            transitions: Vec::new(),
-        };
-    }
-
-    pub fn from_strings(lines: Vec<Vec<isize>>) -> Result<Self, String> {
+    pub fn from_strings(lines: Vec<Vec<isize>>, capacity: usize) -> Result<Self, String> {
         let mut containers: Vec<Container> = Vec::new();
 
         for line in lines {
-            let container = match Container::new(line) {
+            let container = match Container::new(line, capacity) {
                 Ok(container) => container,
                 Err(err) => return Err(err),
             };
@@ -28,10 +21,13 @@ impl State {
         }
 
         // Add 2 empty containers
-        containers.push(Container::new(Vec::new()).unwrap());
-        containers.push(Container::new(Vec::new()).unwrap());
+        containers.push(Container::new(Vec::new(), capacity).unwrap());
+        containers.push(Container::new(Vec::new(), capacity).unwrap());
 
-        return Ok(Self::new(containers));
+        return Ok(Self {
+            containers,
+            transitions: Vec::new(),
+        });
     }
 
     pub fn get_transitions(&self) -> &Vec<Transition> {

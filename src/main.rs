@@ -4,11 +4,11 @@ use std::{
     process,
 };
 
-use models::{State, CONTAINER_CAPACITY, CONTAINER_DASH_ID, CONTAINER_STAR_ID};
+use models::{State, CONTAINER_DASH_ID, CONTAINER_STAR_ID};
 
 fn main() {
     let state = {
-        let lines = match read_input() {
+        let (lines, capacity) = match read_input() {
             Ok(input) => input,
             Err(errors) => {
                 println!("Found following errors in input:");
@@ -17,7 +17,7 @@ fn main() {
             }
         };
 
-        match State::from_strings(lines) {
+        match State::from_strings(lines, capacity) {
             Ok(state) => state,
             Err(err) => {
                 println!("error: {err}");
@@ -27,7 +27,7 @@ fn main() {
     };
 
     if state.is_solved() {
-        println!("state is already solved!");
+        println!("State is already solved!");
         return;
     }
 
@@ -47,7 +47,7 @@ fn main() {
     }
 }
 
-fn read_input() -> Result<Vec<Vec<isize>>, Vec<String>> {
+fn read_input() -> Result<(Vec<Vec<isize>>, usize), Vec<String>> {
     let mut lines = Vec::new();
 
     for line in std::io::stdin().lines() {
@@ -70,6 +70,25 @@ fn read_input() -> Result<Vec<Vec<isize>>, Vec<String>> {
             Err(err) => panic!("could not read stdin: {}", err),
         }
     }
+
+    // Figure out the capacity based on max line size of input
+    let capacity = {
+        let mut cap = 0;
+
+        for line in &lines {
+            let length = line
+                .replace("*", "")
+                .replace("-", "")
+                .trim()
+                .split(" ")
+                .filter(|s| *s != "")
+                .count();
+
+            cap = usize::max(cap, length);
+        }
+
+        cap
+    };
 
     // Validate the input
     {
@@ -109,10 +128,10 @@ fn read_input() -> Result<Vec<Vec<isize>>, Vec<String>> {
             }
 
             for entry in colors_map {
-                if entry.1 != CONTAINER_CAPACITY as i32 {
+                if entry.1 != capacity as i32 {
                     errors.push(format!(
                         "color \"{}\" only exists {} time(s) not {}",
-                        entry.0, entry.1, CONTAINER_CAPACITY
+                        entry.0, entry.1, capacity
                     ))
                 }
             }
@@ -151,5 +170,5 @@ fn read_input() -> Result<Vec<Vec<isize>>, Vec<String>> {
             .collect()
     };
 
-    return Ok(input);
+    return Ok((input, capacity));
 }
