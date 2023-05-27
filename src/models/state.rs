@@ -1,5 +1,5 @@
-use super::{transition::Transition, Container};
-use std::{cmp::Ordering, collections::BinaryHeap, collections::HashSet, hash::Hash, rc::Rc};
+use super::{transition::Transition, with_score::WithScore, Container};
+use std::{collections::BinaryHeap, collections::HashSet, hash::Hash, rc::Rc};
 
 #[derive(Clone)]
 pub struct State {
@@ -117,52 +117,34 @@ impl State {
         let mut queue = BinaryHeap::new();
         let mut visited = HashSet::new();
 
-        let current = Rc::new(self.clone());
+        let score = self.get_score();
+        let current = Rc::new(WithScore::new(self.clone(), score));
+
         queue.push(Rc::clone(&current));
         visited.insert(Rc::clone(&current));
 
         while !queue.is_empty() {
             let top = queue.pop().unwrap();
-            if top.is_solved() {
-                let top = (*top).clone();
-                return Some(top);
+            let current = top.value();
+
+            if current.is_solved() {
+                let state = (*current).clone();
+                return Some(state);
             }
 
-            let possible_states = top.get_possible_states();
+            let possible_states = current.get_possible_states();
             possible_states.into_iter().for_each(|state| {
-                let state = Rc::from(state);
-                if !visited.contains(&state) {
-                    queue.push(Rc::clone(&state));
-                    visited.insert(Rc::clone(&state));
+                let score = state.get_score();
+                let new = Rc::from(WithScore::new(state, score));
+
+                if !visited.contains(&new) {
+                    queue.push(Rc::clone(&new));
+                    visited.insert(Rc::clone(&new));
                 }
             });
         }
 
         return None;
-    }
-}
-
-impl PartialEq for State {
-    fn eq(&self, other: &Self) -> bool {
-        self.get_score() == other.get_score()
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.get_score() != other.get_score()
-    }
-}
-
-impl Eq for State {}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for State {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.get_score().cmp(&other.get_score())
     }
 }
 
