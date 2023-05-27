@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, hash::Hash};
 
-pub struct WithScore<T, S: Ord> {
+pub struct WithScore<T, S> {
     value: T,
     score: S,
 }
@@ -39,7 +39,7 @@ impl<T, S: Ord> Ord for WithScore<T, S> {
     }
 }
 
-impl<T: Hash, S: Ord> Hash for WithScore<T, S> {
+impl<T: Hash, S> Hash for WithScore<T, S> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.value.hash(state);
     }

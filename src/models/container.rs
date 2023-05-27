@@ -2,17 +2,20 @@ use std::hash::Hash;
 
 #[derive(Clone)]
 pub struct Container {
-    content: Vec<isize>,
+    content: Vec<usize>,
     capacity: usize,
     has_star: bool,
     has_dash: bool,
 }
 
+/// The number to be used in order to indicate that this container has a star
 pub const CONTAINER_STAR_ID: isize = -1;
+
+/// The number to be used in order to indicate that this container has a dash
 pub const CONTAINER_DASH_ID: isize = -2;
 
 impl Container {
-    pub fn new(mut content: Vec<isize>, capacity: usize) -> Result<Self, String> {
+    pub fn new(content: Vec<isize>, capacity: usize) -> Result<Self, String> {
         let has_dash = content.iter().any(|s| *s == CONTAINER_DASH_ID);
         let has_star = content.iter().any(|s| *s == CONTAINER_STAR_ID);
 
@@ -22,13 +25,17 @@ impl Container {
             ));
         }
 
-        content = content
+        let content: Vec<usize> = content
             .into_iter()
-            .filter(|s| *s != CONTAINER_STAR_ID && *s != CONTAINER_DASH_ID)
+            .filter(|s| *s > 0)
+            .map(|e| e as usize)
             .collect();
 
-        if content.len() > capacity {
-            return Err(format!("content ({:?}) too large!", content));
+        if content.len() > 0 && content.len() != capacity {
+            return Err(format!(
+                "content size ({}) does not match capacity!",
+                content.len()
+            ));
         }
 
         return Ok(Self {
@@ -39,7 +46,7 @@ impl Container {
         });
     }
 
-    fn peek(&self) -> Option<&isize> {
+    fn peek(&self) -> Option<&usize> {
         return self.content.last();
     }
 

@@ -1,6 +1,8 @@
-use super::{transition::Transition, with_score::WithScore, Container};
+use super::{Container, Transition, WithScore};
 use std::{collections::BinaryHeap, collections::HashSet, hash::Hash, rc::Rc};
 
+/// State represents the state of a set of containers.
+/// State is totally immutable. A new state is created when applying a transition.
 #[derive(Clone)]
 pub struct State {
     containers: Vec<Container>,
@@ -8,10 +10,13 @@ pub struct State {
 }
 
 impl State {
-    pub fn from_strings(lines: Vec<Vec<isize>>, capacity: usize) -> Result<Self, String> {
+    /// Creates a new state (game) with the given content and capacity.
+    /// Any value that is not +ve or one of the defined container IDs is ignored.
+    /// Each of the inner vectors of the content MUST contain the exact same count of +ve numbers as the capacity.
+    pub fn new(content: Vec<Vec<isize>>, capacity: usize) -> Result<Self, String> {
         let mut containers: Vec<Container> = Vec::new();
 
-        for line in lines {
+        for line in content {
             let container = match Container::new(line, capacity) {
                 Ok(container) => container,
                 Err(err) => return Err(err),
@@ -30,7 +35,8 @@ impl State {
         });
     }
 
-    pub fn get_transitions(&self) -> &Vec<Transition> {
+    /// Get transitions that lead to this state from the original state.
+    pub fn transitions(&self) -> &Vec<Transition> {
         return &self.transitions;
     }
 
@@ -66,6 +72,7 @@ impl State {
         );
     }
 
+    /// Check if the state is solved or not
     pub fn is_solved(&self) -> bool {
         let got_stars = self
             .containers
@@ -128,6 +135,7 @@ impl State {
             .collect()
     }
 
+    /// Returns a solved state if there is a solution, and None otherwise.
     pub fn solve(&self) -> Option<Self> {
         let mut queue = BinaryHeap::new();
         let mut visited = HashSet::new();
@@ -165,6 +173,8 @@ impl State {
 
 impl Hash for State {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Hash the containers in a sorted order
+        // this eliminates similar states with different order of containers
         let sorted_containers = {
             let mut containers: Vec<String> =
                 self.containers.iter().map(|c| c.to_string()).collect();

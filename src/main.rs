@@ -1,10 +1,9 @@
-mod models;
 use std::{
     collections::{HashMap, HashSet},
     process,
 };
 
-use models::{State, CONTAINER_DASH_ID, CONTAINER_STAR_ID};
+use color_sort_solver::{State, CONTAINER_DASH_ID, CONTAINER_STAR_ID};
 
 fn main() {
     let state = {
@@ -17,7 +16,7 @@ fn main() {
             }
         };
 
-        match State::from_strings(lines, capacity) {
+        match State::new(lines, capacity) {
             Ok(state) => state,
             Err(err) => {
                 println!("error: {err}");
@@ -33,13 +32,10 @@ fn main() {
 
     match state.solve() {
         Some(solved) => {
-            println!(
-                "Found solution in {} steps:",
-                solved.get_transitions().len()
-            );
+            println!("Found solution in {} steps:", solved.transitions().len());
 
             solved
-                .get_transitions()
+                .transitions()
                 .iter()
                 .for_each(|t| println!("- {}", t));
         }
