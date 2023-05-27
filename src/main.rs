@@ -1,12 +1,29 @@
 mod models;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    process,
+};
 
-use models::{State, CONTAINER_CAPACITY};
+use models::{State, CONTAINER_CAPACITY, CONTAINER_DASH_ID, CONTAINER_STAR_ID};
 
 fn main() {
     let state = {
-        let lines = read_input();
-        State::from_strings(lines)
+        let lines = match read_input() {
+            Ok(input) => input,
+            Err(errors) => {
+                println!("Found following errors in input:");
+                errors.iter().for_each(|e| println!("{e}"));
+                process::exit(1);
+            }
+        };
+
+        match State::from_strings(lines) {
+            Ok(state) => state,
+            Err(err) => {
+                println!("error: {err}");
+                process::exit(1);
+            }
+        }
     };
 
     if state.is_solved() {
@@ -30,7 +47,7 @@ fn main() {
     }
 }
 
-fn read_input() -> Vec<Vec<isize>> {
+fn read_input() -> Result<Vec<Vec<isize>>, Vec<String>> {
     let mut lines = Vec::new();
 
     for line in std::io::stdin().lines() {
@@ -65,7 +82,10 @@ fn read_input() -> Vec<Vec<isize>> {
                 colors.extend(line.split(' ').map(|s| s.to_owned()));
             }
 
-            colors.into_iter().filter(|s| s != "*").collect()
+            colors
+                .into_iter()
+                .filter(|s| s != "*" && s != "-")
+                .collect()
         };
 
         // Check that colors count == containers count
@@ -91,7 +111,7 @@ fn read_input() -> Vec<Vec<isize>> {
             for entry in colors_map {
                 if entry.1 != CONTAINER_CAPACITY as i32 {
                     errors.push(format!(
-                        "color {} only exists {} times not {}",
+                        "color \"{}\" only exists {} time(s) not {}",
                         entry.0, entry.1, CONTAINER_CAPACITY
                     ))
                 }
@@ -99,16 +119,15 @@ fn read_input() -> Vec<Vec<isize>> {
         }
 
         if !errors.is_empty() {
-            println!("Found following errors in input:");
-            errors.iter().for_each(|e| println!("{e}"));
-            panic!("invalid input")
+            return Err(errors);
         }
     }
 
     // Transform colors into numbers
     let input: Vec<Vec<isize>> = {
         let mut color_ids = HashMap::new();
-        color_ids.insert("*", -1 as isize);
+        color_ids.insert("*", CONTAINER_STAR_ID);
+        color_ids.insert("-", CONTAINER_DASH_ID);
 
         for line in &lines {
             for color in line.split(' ') {
@@ -132,5 +151,5 @@ fn read_input() -> Vec<Vec<isize>> {
             .collect()
     };
 
-    return input;
+    return Ok(input);
 }

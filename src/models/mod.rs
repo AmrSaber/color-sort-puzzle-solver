@@ -5,4 +5,6 @@ mod with_score;
 
 pub use container::Container;
 pub use container::CONTAINER_CAPACITY;
+pub use container::CONTAINER_DASH_ID;
+pub use container::CONTAINER_STAR_ID;
 pub use state::State;

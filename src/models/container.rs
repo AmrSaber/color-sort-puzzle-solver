@@ -4,20 +4,38 @@ use std::hash::Hash;
 pub struct Container {
     content: Vec<isize>,
     has_star: bool,
+    has_dash: bool,
 }
 
 pub const CONTAINER_CAPACITY: usize = 4;
+pub const CONTAINER_STAR_ID: isize = -1;
+pub const CONTAINER_DASH_ID: isize = -2;
 
 impl Container {
-    pub fn new(mut content: Vec<isize>) -> Self {
-        let has_star = content.iter().any(|s| *s == -1);
-        content = content.into_iter().filter(|s| *s != -1).collect();
+    pub fn new(mut content: Vec<isize>) -> Result<Self, String> {
+        let has_dash = content.iter().any(|s| *s == CONTAINER_DASH_ID);
+        let has_star = content.iter().any(|s| *s == CONTAINER_STAR_ID);
 
-        if content.len() > CONTAINER_CAPACITY {
-            panic!("content ({:?}) too large!", content);
+        if has_dash && has_star {
+            return Err(String::from(
+                "container cannot have dash and star at the same time!",
+            ));
         }
 
-        return Self { content, has_star };
+        content = content
+            .into_iter()
+            .filter(|s| *s != CONTAINER_STAR_ID && *s != CONTAINER_DASH_ID)
+            .collect();
+
+        if content.len() > CONTAINER_CAPACITY {
+            return Err(format!("content ({:?}) too large!", content));
+        }
+
+        return Ok(Self {
+            content,
+            has_star,
+            has_dash,
+        });
     }
 
     fn peek(&self) -> Option<&isize> {
@@ -46,8 +64,12 @@ impl Container {
         self.has_star
     }
 
+    pub fn has_dash(&self) -> bool {
+        self.has_dash
+    }
+
     pub fn can_pour_into(&self, other: &Self) -> bool {
-        if self.is_empty() || other.is_full() {
+        if self.is_empty() || self.is_sorted() || other.is_full() {
             return false;
         }
 

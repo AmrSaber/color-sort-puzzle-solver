@@ -15,14 +15,23 @@ impl State {
         };
     }
 
-    pub fn from_strings(lines: Vec<Vec<isize>>) -> Self {
-        let mut containers: Vec<Container> = lines.into_iter().map(|v| Container::new(v)).collect();
+    pub fn from_strings(lines: Vec<Vec<isize>>) -> Result<Self, String> {
+        let mut containers: Vec<Container> = Vec::new();
+
+        for line in lines {
+            let container = match Container::new(line) {
+                Ok(container) => container,
+                Err(err) => return Err(err),
+            };
+
+            containers.push(container);
+        }
 
         // Add 2 empty containers
-        containers.push(Container::new(Vec::new()));
-        containers.push(Container::new(Vec::new()));
+        containers.push(Container::new(Vec::new()).unwrap());
+        containers.push(Container::new(Vec::new()).unwrap());
 
-        return Self::new(containers);
+        return Ok(Self::new(containers));
     }
 
     pub fn get_transitions(&self) -> &Vec<Transition> {
@@ -44,12 +53,20 @@ impl State {
             .count() as i32
     }
 
+    fn dashes_count(&self) -> i32 {
+        self.containers
+            .iter()
+            .filter(|c| c.has_dash() && c.is_empty())
+            .count() as i32
+    }
+
     // The higher the better
-    fn get_score(&self) -> (i32, i32, i32) {
+    fn get_score(&self) -> (i32, i32, i32, i32) {
         return (
             -(self.transitions.len() as i32),
             self.sorted_count(),
             self.stars_count(),
+            self.dashes_count(),
         );
     }
 
@@ -59,9 +76,14 @@ impl State {
             .iter()
             .all(|c| !(c.has_star() && c.is_empty()));
 
+        let got_dashes = self
+            .containers
+            .iter()
+            .all(|c: &Container| !(c.has_dash() && !c.is_empty()));
+
         let all_sorted = self.empty_count() + self.sorted_count() == self.containers.len() as i32;
 
-        return got_stars && all_sorted;
+        return all_sorted && got_stars && got_dashes;
     }
 
     fn get_possible_transitions(&self) -> Vec<Transition> {
