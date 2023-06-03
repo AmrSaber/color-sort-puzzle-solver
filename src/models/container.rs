@@ -90,14 +90,6 @@ impl Container {
             other.content.push(color);
         }
     }
-
-    pub fn to_string(&self) -> String {
-        self.content
-            .iter()
-            .map(|c| c.to_string())
-            .collect::<Vec<String>>()
-            .join("|")
-    }
 }
 
 impl std::fmt::Display for Container {
