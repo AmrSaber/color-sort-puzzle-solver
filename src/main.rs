@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    process,
+    env, process,
 };
 
 use color_sort_solver::{Container, ContainerConstraint, State};
@@ -24,7 +24,10 @@ fn main() {
         return;
     }
 
-    match state.solve() {
+    // -f == fast -- if fast flag is not found, then solve for optimal solution
+    let optimal_solution = env::args().filter(|a| a == "-f").count() == 0;
+
+    match state.solve(optimal_solution) {
         Some(solved) => {
             println!("Found solution in {} steps:", solved.transitions().len());
 

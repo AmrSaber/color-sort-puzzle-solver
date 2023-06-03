@@ -46,13 +46,20 @@ impl State {
     }
 
     // The higher the better
-    fn get_score(&self) -> (i32, i32, i32, i32) {
-        return (
+    fn get_score(&self, optimal: bool) -> (i32, i32, i32, i32) {
+        let mut score = (
             -(self.transitions.len() as i32),
             self.sorted_count(),
             self.must_fill_count(),
             self.must_empty_count(),
         );
+
+        if !optimal {
+            // For sub-optimal solution, give priority to # of sorted containers
+            (score.0, score.1) = (score.1, score.0);
+        }
+
+        return score;
     }
 
     /// Check if the state is solved or not
@@ -65,7 +72,7 @@ impl State {
         let got_empties = self
             .containers
             .iter()
-            .all(|c: &Container| !(c.must_empty() && !c.is_empty()));
+            .all(|c| !(c.must_empty() && !c.is_empty()));
 
         let all_sorted = self.empty_count() + self.sorted_count() == self.containers.len() as i32;
 
@@ -119,18 +126,18 @@ impl State {
     }
 
     /// Returns a solved state if there is a solution, and None otherwise.
-    pub fn solve(&self) -> Option<Self> {
+    /// Accepts a boolean to set whether or not get the optimal solution.
+    pub fn solve(&self, optimal: bool) -> Option<Self> {
         let mut queue = BinaryHeap::new();
         let mut visited = HashSet::new();
 
-        let score = self.get_score();
+        let score = self.get_score(optimal);
         let current = Rc::new(WithScore::new(self.clone(), score));
 
         queue.push(Rc::clone(&current));
         visited.insert(Rc::clone(&current));
 
-        while !queue.is_empty() {
-            let top = queue.pop().unwrap();
+        while let Some(top) = queue.pop() {
             let current = top.value();
 
             if current.is_solved() {
@@ -138,16 +145,15 @@ impl State {
                 return Some(state);
             }
 
-            let possible_states = current.get_possible_states();
-            possible_states.into_iter().for_each(|state| {
-                let score = state.get_score();
+            for state in current.get_possible_states() {
+                let score = state.get_score(optimal);
                 let new = Rc::from(WithScore::new(state, score));
 
                 if !visited.contains(&new) {
                     queue.push(Rc::clone(&new));
                     visited.insert(Rc::clone(&new));
                 }
-            });
+            }
         }
 
         return None;

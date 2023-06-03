@@ -8,7 +8,7 @@ For a game of 10 (8 filled + 2 empty) containers -- the solver finds an optimal 
 
 You can enter the configuration of the game at any state (beginning or mid-game) and the solver will solve the game starting from that position.
 
-This solver will either find the optimal solution, or print that there is no solution.
+This solver will either find the optimal solution, or print that there is no solution. There is also an option to find suboptimal solution, which is a lot quicker to calculate.
 
 ## Game explanation
 
@@ -120,6 +120,8 @@ There are 3 rules for input:
 - All containers must be of same capacity.
 - Each color must be present a number of times equal to container capacity.
 - Number of colors must be less than or equal to the number of the containers.
+
+Executable also accepts an optional flag `-f` (stands for `fast` option), which will output suboptimal (but fast) solution. It is a lot faster than the optimal solutions (e.g. in some cases, the optimal solution takes 1.5 seconds, and the suboptimal takes 0.05 seconds).
 
 ### Output
 
