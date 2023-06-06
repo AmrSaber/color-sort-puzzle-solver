@@ -45,21 +45,30 @@ impl State {
             .count() as i32
     }
 
-    // The higher the better
-    fn get_score(&self, optimal: bool) -> (i32, i32, i32, i32) {
-        let mut score = (
-            -(self.transitions.len() as i32),
-            self.sorted_count(),
-            self.must_fill_count(),
-            self.must_empty_count(),
-        );
+    /// Score of the current state, the higher the better.
+    /// For optimal solution, only distance (current + heuristic) is used as a form of A* search
+    /// For suboptimal solution, the number of sorted containers is the priority as a form of greedy search
+    fn get_score(&self, optimal: bool) -> impl Ord {
+        let remaining = self.containers.len() as i32 - self.sorted_count();
+        let distance = self.transitions.len() as i32;
 
-        if !optimal {
-            // For sub-optimal solution, give priority to # of sorted containers
-            (score.0, score.1) = (score.1, score.0);
+        let heuristic_distance = distance + remaining;
+
+        if optimal {
+            return (
+                -heuristic_distance,
+                self.must_empty_count(),
+                self.must_fill_count(),
+                0,
+            );
         }
 
-        return score;
+        return (
+            self.sorted_count(),
+            -heuristic_distance,
+            self.must_empty_count(),
+            self.must_fill_count(),
+        );
     }
 
     /// Check if the state is solved or not
